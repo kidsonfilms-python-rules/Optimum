@@ -20,7 +20,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/kidsonfilms-python-rules/Optimum">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
+    <img src="https://github.com/othneildrew/Best-README-Template/raw/master/images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
 <h3 align="center">The Optimum Project</h3>
