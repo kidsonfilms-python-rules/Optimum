@@ -20,7 +20,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/kidsonfilms-python-rules/Optimum">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
+    <img src="https://github.com/othneildrew/Best-README-Template/raw/master/images/logo.png" alt="Logo" width="80" height="80">
   </a>
 
 <h3 align="center">The Optimum Project</h3>
@@ -153,7 +153,7 @@ Don't forget to give the project a star! Thanks again!
 <!-- LICENSE -->
 ## License
 
-Distributed under the MIT License. See `LICENSE.txt` for more information.
+Distributed under the GPL-2.0 License. See `LICENSE.txt` for more information.
 
 <p align="right">(<a href="#top">back to top</a>)</p>
 
