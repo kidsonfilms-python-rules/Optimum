@@ -4,64 +4,89 @@ import 'package:flutter/services.dart';
 import 'package:ftc_scouting_app/classes/team.dart';
 import 'package:ftc_scouting_app/pages/team_overview.dart';
 import 'package:ftc_scouting_app/pages/team_profile.dart';
+import 'package:ftc_scouting_app/services/database.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_floating_search_bar/material_floating_search_bar.dart';
 
 import 'homepage.dart';
 
 class DiscoverPage extends StatefulWidget {
-  const DiscoverPage({Key? key}) : super(key: key);
+  final DatabaseService dbService;
+  const DiscoverPage(this.dbService, {Key? key}) : super(key: key);
 
   @override
-  _DiscoverPageState createState() => _DiscoverPageState();
+  _DiscoverPageState createState() => _DiscoverPageState(dbService);
 }
 
 class _DiscoverPageState extends State<DiscoverPage> {
+  final DatabaseService dbService;
+  // List<FTCTeam> teams = [
+  //   FTCTeam(
+  //       "Joos",
+  //       16236,
+  //       98,
+  //       "this is some boilerplate description, we basicly cant do anything and cant speel",
+  //       ["Frieght Deposit (SH)/Barcode Detection", "Warehouse Parking"],
+  //       ["Cannot do anything"],
+  //       true,
+  //       following: true,
+  //       logo:
+  //           "https://cdn.discordapp.com/icons/871829127227928616/8f641588fe6d07981d8d02d635323517.webp",
+  //       robotThumbnail:
+  //           "https://lh5.googleusercontent.com/LRoSg9m2BTWX2CDjRNexjROhjRt_vRsdsT73N5PcAfbWlidJ-XBNjUXnRUztR0krXpbau5e73JzAihw2HLG9pGZQw2Ol2pEd38c6VhK1je7wx_9EGjYlta8J1NZ-zFVm3MfkSBts7A"),
+  //   FTCTeam(
+  //     "MBET",
+  //     10223,
+  //     48,
+  //     "this is some boilerplate description, we basicly cant do anything and cant speel",
+  //     ["Frieght Deposit (SH)/Barcode Detection", "Warehouse Parking"],
+  //     ["Cannot do anything"],
+  //     false,
+  //   ),
+  //   FTCTeam(
+  //     "Tbinkers",
+  //     21334,
+  //     8,
+  //     "this is some boilerplate description, we basicly cant do anything and cant speel",
+  //     ["Frieght Deposit (SH)/Barcode Detection", "Warehouse Parking"],
+  //     ["Cannot do anything"],
+  //     false,
+  //   ),
+  //   FTCTeam(
+  //     "Bruhaps",
+  //     12237,
+  //     24,
+  //     "this is some boilerplate description, we basicly cant do anything and cant speel",
+  //     ["Frieght Deposit (SH)/Barcode Detection", "Warehouse Parking"],
+  //     ["Cannot do anything"],
+  //     false,
+  //   ),
+  // ];
   List<FTCTeam> teams = [
-    FTCTeam(
-        "Joos",
-        16236,
-        98,
-        "this is some boilerplate description, we basicly cant do anything and cant speel",
-        ["Frieght Deposit (SH)/Barcode Detection", "Warehouse Parking"],
-        ["Cannot do anything"],
-        true,
-        following: true,
-        logo:
-            "https://cdn.discordapp.com/icons/871829127227928616/8f641588fe6d07981d8d02d635323517.webp",
-        robotThumbnail:
-            "https://lh5.googleusercontent.com/LRoSg9m2BTWX2CDjRNexjROhjRt_vRsdsT73N5PcAfbWlidJ-XBNjUXnRUztR0krXpbau5e73JzAihw2HLG9pGZQw2Ol2pEd38c6VhK1je7wx_9EGjYlta8J1NZ-zFVm3MfkSBts7A"),
-    FTCTeam(
-      "MBET",
-      10223,
-      48,
-      "this is some boilerplate description, we basicly cant do anything and cant speel",
-      ["Frieght Deposit (SH)/Barcode Detection", "Warehouse Parking"],
-      ["Cannot do anything"],
-      false,
-    ),
-    FTCTeam(
-      "Tbinkers",
-      21334,
-      8,
-      "this is some boilerplate description, we basicly cant do anything and cant speel",
-      ["Frieght Deposit (SH)/Barcode Detection", "Warehouse Parking"],
-      ["Cannot do anything"],
-      false,
-    ),
-    FTCTeam(
-      "Bruhaps",
-      12237,
-      24,
-      "this is some boilerplate description, we basicly cant do anything and cant speel",
-      ["Frieght Deposit (SH)/Barcode Detection", "Warehouse Parking"],
-      ["Cannot do anything"],
-      false,
-    ),
+    // FTCTeam(
+    //   "Bruhaps",
+    //   12237,
+    //   24,
+    //   "this is some boilerplate description, we basicly cant do anything and cant speel",
+    //   ["Frieght Deposit (SH)/Barcode Detection", "Warehouse Parking"],
+    //   ["Cannot do anything"],
+    //   false,
+    // ),
   ];
+  bool gotInfo = false;
+  _DiscoverPageState(this.dbService);
 
   @override
   Widget build(BuildContext context) {
+    if (!gotInfo) {
+      dbService.getCompTeams().then((teamsData) {
+        setState(() {
+          teams = teamsData;
+          gotInfo = true;
+        });
+      });
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
       bottomNavigationBar: FluidNavBar(
@@ -84,12 +109,13 @@ class _DiscoverPageState extends State<DiscoverPage> {
           if (n == 0) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const HomePage()),
+              MaterialPageRoute(builder: (context) => HomePage(dbService)),
             );
           } else if (n == 2) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const TeamProfilePage()),
+              MaterialPageRoute(
+                  builder: (context) => TeamProfilePage(dbService)),
             );
           }
         }, // (4)
@@ -130,7 +156,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                     context,
                                     MaterialPageRoute(
                                         builder: (context) =>
-                                            TeamOverview(teams[index])));
+                                            TeamOverview(teams[index], dbService.userAlliancePartners)));
                               },
                               child: Card(
                                 shape: RoundedRectangleBorder(
@@ -145,21 +171,32 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                     children: [
                                       Row(
                                         children: [
-                                          Text(
-                                            teams[index]
-                                                    .teamNickname
-                                                    .toUpperCase() +
-                                                " " +
+                                          SizedBox(
+                                            width: teams[index].logo != ""
+                                                ? 200
+                                                : 300,
+                                            child: SingleChildScrollView(
+                                              scrollDirection: Axis.horizontal,
+                                              child: Text(
                                                 teams[index]
-                                                    .teamNumber
-                                                    .toString(),
-                                            textAlign: TextAlign.start,
-                                            style: GoogleFonts.getFont(
-                                                'Poppins',
-                                                fontWeight: FontWeight.w400,
-                                                textStyle: const TextStyle(
-                                                    fontSize: 24,
-                                                    color: Colors.white)),
+                                                        .teamNickname
+                                                        .toUpperCase() +
+                                                    " " +
+                                                    teams[index]
+                                                        .teamNumber
+                                                        .toString(),
+                                                textAlign: TextAlign.start,
+                                                overflow: TextOverflow.fade,
+                                                maxLines: 1,
+                                                softWrap: false,
+                                                style: GoogleFonts.getFont(
+                                                    'Poppins',
+                                                    fontWeight: FontWeight.w400,
+                                                    textStyle: const TextStyle(
+                                                        fontSize: 24,
+                                                        color: Colors.white)),
+                                              ),
+                                            ),
                                           ),
                                           const Spacer(),
                                           teams[index].logo != ""
@@ -180,17 +217,31 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                                 fontSize: 13,
                                                 color: Colors.white)),
                                       ),
-                                      Text(
-                                        teams[index].teamHeadliner +
-                                            " View Overview>",
-                                        style: GoogleFonts.getFont('Poppins',
-                                            fontWeight: FontWeight.w400,
-                                            textStyle: const TextStyle(
-                                                fontSize: 12,
-                                                color: Color.fromRGBO(
-                                                    172, 172, 172, 1))),
+                                      RichText(
+                                        text: TextSpan(
+                                            text: teams[index].teamHeadliner,
+                                            style: GoogleFonts.getFont(
+                                                'Poppins',
+                                                fontWeight: FontWeight.w400,
+                                                textStyle: const TextStyle(
+                                                    fontSize: 14,
+                                                    color: Color.fromRGBO(
+                                                        172, 172, 172, 1))),
+                                            children: [
+                                              TextSpan(
+                                                  text: " View Overview >",
+                                                  style: GoogleFonts.getFont(
+                                                      'Poppins',
+                                                      fontWeight:
+                                                          FontWeight.w400,
+                                                      textStyle:
+                                                          const TextStyle(
+                                                        fontSize: 14,
+                                                        color: Colors.white,
+                                                      )))
+                                            ]),
                                       ),
-                                      SingleChildScrollView(
+                                      teams[index].isUser ? SingleChildScrollView(
                                         scrollDirection: Axis.horizontal,
                                         child: Row(
                                           children: [
@@ -218,7 +269,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                                                   fontWeight:
                                                                       FontWeight
                                                                           .w500,
-                                                                  fontSize: 11))),
+                                                                  fontSize:
+                                                                      11))),
                                                 ),
                                               ],
                                             ),
@@ -249,7 +301,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                                                   fontWeight:
                                                                       FontWeight
                                                                           .w500,
-                                                                  fontSize: 11))),
+                                                                  fontSize:
+                                                                      11))),
                                                 ),
                                               ],
                                             ),
@@ -264,7 +317,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                                 SizedBox(
                                                   width: 150,
                                                   child: Text(
-                                                      teams[index]
+                                                      teams[
+                                                              index]
                                                           .teamWeaknesses[0],
                                                       overflow:
                                                           TextOverflow.ellipsis,
@@ -277,13 +331,14 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                                                   fontWeight:
                                                                       FontWeight
                                                                           .w500,
-                                                                  fontSize: 11))),
+                                                                  fontSize:
+                                                                      11))),
                                                 ),
                                               ],
                                             ),
                                           ],
                                         ),
-                                      )
+                                      ) : const Text("")
                                     ],
                                   ),
                                 ),

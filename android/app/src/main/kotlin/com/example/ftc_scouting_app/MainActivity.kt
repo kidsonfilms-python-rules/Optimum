@@ -1,4 +1,4 @@
-package com.example.ftc_scouting_app
+package com.juice16236.optimum
 
 import io.flutter.embedding.android.FlutterActivity
 

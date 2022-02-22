@@ -1,26 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ftc_scouting_app/services/database.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class GeneralSettingsPage extends StatefulWidget {
-  const GeneralSettingsPage({Key? key}) : super(key: key);
+  final DatabaseService databaseService;
+  const GeneralSettingsPage(this.databaseService, {Key? key}) : super(key: key);
 
   @override
-  _GeneralSettingsPageState createState() => _GeneralSettingsPageState();
+  _GeneralSettingsPageState createState() =>
+      _GeneralSettingsPageState(databaseService);
 }
 
 class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
+  final DatabaseService databaseService;
+  _GeneralSettingsPageState(this.databaseService);
   final List<Color> _colorOptions = [
-    Color(0xFFFF5F00),
-    Color.fromARGB(255, 255, 0, 140),
-    Color.fromARGB(255, 119, 0, 255),
-    Color.fromARGB(255, 89, 0, 255),
-    Color.fromARGB(255, 0, 153, 255),
-    Color.fromARGB(255, 0, 213, 228),
-    Color.fromARGB(255, 0, 255, 200),
-    Color.fromARGB(255, 255, 238, 0),
-    Color.fromARGB(255, 255, 51, 0),
-    Color.fromARGB(255, 164, 255, 103),
+    const Color(0xFFFF5F00),
+    const Color.fromARGB(255, 255, 0, 140),
+    const Color.fromARGB(255, 119, 0, 255),
+    const Color.fromARGB(255, 89, 0, 255),
+    const Color.fromARGB(255, 0, 153, 255),
+    const Color.fromARGB(255, 0, 213, 228),
+    const Color.fromARGB(255, 0, 255, 200),
+    const Color.fromARGB(255, 255, 238, 0),
+    const Color.fromARGB(255, 255, 51, 0),
+    const Color.fromARGB(255, 164, 255, 103),
   ];
 
   var _chosenColor = -1;
@@ -76,7 +81,12 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
               ),
               Row(
                 children: [
-                  Text("Joos",
+                  Text(
+                      databaseService.compTeams
+                          .where((team) =>
+                              team.teamNumber == databaseService.userTeamNumber)
+                          .toList()[0]
+                          .teamNickname,
                       style: GoogleFonts.getFont("Poppins",
                           fontWeight: FontWeight.w600,
                           fontSize: 20,
@@ -95,11 +105,11 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
                           context: context,
                           builder: (context) {
                             return Container(
-                              padding: EdgeInsets.all(16.0),
+                              padding: const EdgeInsets.all(16.0),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  SizedBox(
+                                  const SizedBox(
                                     height: 20,
                                   ),
                                   Text(
@@ -179,7 +189,12 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
                     width: 25,
                     decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(6),
-                        color: Color(0xFFFF5F00)),
+                        color: databaseService.compTeams
+                            .where((team) =>
+                                team.teamNumber ==
+                                databaseService.userTeamNumber)
+                            .toList()[0]
+                            .theme),
                   ),
                   const Spacer(),
                   GestureDetector(
@@ -194,11 +209,11 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
                           backgroundColor: const Color.fromRGBO(29, 29, 29, 1),
                           context: context,
                           builder: (context) {
-                            return StatefulBuilder(builder: (BuildContext
-                                    context,
-                                StateSetter setStateBottomSheet) {
+                            return StatefulBuilder(builder:
+                                (BuildContext context,
+                                    StateSetter setStateBottomSheet) {
                               return Container(
-                                padding: EdgeInsets.all(16.0),
+                                padding: const EdgeInsets.all(16.0),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
@@ -253,17 +268,19 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
                                           }),
                                     ),
                                     const TextField(
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(color: Colors.white),
-                                    keyboardAppearance: Brightness.dark,
-                                    decoration: InputDecoration(
-                                      hintText: "or enter HEX (#FF5C00)",
-                                      hintStyle: TextStyle(color: Colors.white30)
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(color: Colors.white),
+                                      keyboardAppearance: Brightness.dark,
+                                      decoration: InputDecoration(
+                                          hintText: "or enter HEX (#FF5C00)",
+                                          hintStyle:
+                                              TextStyle(color: Colors.white30)),
+                                      textCapitalization:
+                                          TextCapitalization.words,
                                     ),
-                                    textCapitalization:
-                                        TextCapitalization.words,
-                                  ),
-                                  SizedBox(height: 20,),
+                                    const SizedBox(
+                                      height: 20,
+                                    ),
                                     OutlinedButton(
                                       child: Text(
                                         "SAVE",
@@ -276,6 +293,16 @@ class _GeneralSettingsPageState extends State<GeneralSettingsPage> {
                                       ),
                                       onPressed: () {
                                         HapticFeedback.heavyImpact();
+                                        setState(() {
+                                          databaseService.compTeams
+                                                  .where((team) =>
+                                                      team.teamNumber ==
+                                                      databaseService
+                                                          .userTeamNumber)
+                                                  .toList()[0]
+                                                  .theme =
+                                              _colorOptions[_chosenColor];
+                                        });
                                         Navigator.pop(context);
                                       },
                                       style: OutlinedButton.styleFrom(

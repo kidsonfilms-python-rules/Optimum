@@ -1,35 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:ftc_scouting_app/classes/match.dart';
+import 'package:ftc_scouting_app/classes/team.dart';
+import 'package:ftc_scouting_app/classes/teamStats.dart';
 import 'package:ftc_scouting_app/pages/discover.dart';
+import 'package:ftc_scouting_app/pages/match_overview.dart';
 import 'package:ftc_scouting_app/pages/team_profile.dart';
+import 'package:ftc_scouting_app/services/database.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fluid_bottom_nav_bar/fluid_bottom_nav_bar.dart';
+import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({Key? key}) : super(key: key);
+  final DatabaseService databaseService;
+  const HomePage(this.databaseService, {Key? key}) : super(key: key);
 
   @override
-  _HomePageState createState() => _HomePageState();
+  _HomePageState createState() => _HomePageState(databaseService);
 }
 
 class _HomePageState extends State<HomePage> {
+  final DatabaseService databaseService;
+  _HomePageState(this.databaseService);
+
+  FTCTeam userTeam = FTCTeam("", 0, 0, "", [], [], false,
+      FTCTeamStats(1, 1, 1, 1, 1, [], [], TeamStatsTrend.STABLE));
+  bool gotInfo = false;
   @override
   Widget build(BuildContext context) {
+    if (!gotInfo) {
+      databaseService.getCompTeams().then((teamsData) {
+        setState(() {
+          userTeam = teamsData
+              .where((element) =>
+                  element.teamNumber == databaseService.userTeamNumber)
+              .toList()[0];
+          gotInfo = true;
+        });
+      });
+    }
+    var nextMatch = databaseService.getNextMatch();
     return Scaffold(
       backgroundColor: Colors.black,
       extendBody: true,
       bottomNavigationBar: FluidNavBar(
-        // (1)
         style: const FluidNavBarStyle(
             barBackgroundColor: Color.fromARGB(255, 20, 20, 20),
             iconBackgroundColor: Color.fromARGB(255, 58, 58, 58),
             iconSelectedForegroundColor: Color.fromRGBO(139, 255, 99, 1),
             iconUnselectedForegroundColor: Colors.white),
-            animationFactor: 2,
-            defaultIndex: 0,
+        animationFactor: 2,
+        defaultIndex: 0,
         icons: [
-          // (2)
-          FluidNavBarIcon(icon: Icons.home), // (3)
+          FluidNavBarIcon(icon: Icons.home),
           FluidNavBarIcon(icon: Icons.search),
           FluidNavBarIcon(icon: Icons.person)
         ],
@@ -38,15 +61,17 @@ class _HomePageState extends State<HomePage> {
           if (n == 1) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const DiscoverPage()),
+              MaterialPageRoute(
+                  builder: (context) => DiscoverPage(databaseService)),
             );
           } else if (n == 2) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const TeamProfilePage()),
+              MaterialPageRoute(
+                  builder: (context) => TeamProfilePage(databaseService)),
             );
           }
-        }, // (4)
+        },
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -95,13 +120,21 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.arrow_drop_up,
-                                color: Color.fromRGBO(90, 255, 63, 1),
-                                size: 50.0),
+                            userTeam.stats.trend == TeamStatsTrend.UP
+                                ? const Icon(Icons.arrow_drop_up,
+                                    color: Color.fromRGBO(90, 255, 63, 1),
+                                    size: 50.0)
+                                : (userTeam.stats.trend == TeamStatsTrend.DOWN
+                                    ? const Icon(Icons.arrow_drop_down,
+                                        color: Color.fromRGBO(255, 63, 63, 1),
+                                        size: 50.0)
+                                    : const SizedBox(
+                                        width: 50,
+                                      )),
                             Column(
                               children: [
                                 Text(
-                                  "#1",
+                                  "#" + userTeam.stats.rank.toString(),
                                   style: GoogleFonts.getFont("Poppins",
                                       textStyle: const TextStyle(
                                           color: Colors.white,
@@ -117,7 +150,8 @@ class _HomePageState extends State<HomePage> {
                                           fontSize: 11)),
                                 ),
                                 Text(
-                                  "OUT OF 40",
+                                  "OUT OF " +
+                                      userTeam.stats.totalTeams.toString(),
                                   style: GoogleFonts.getFont("Poppins",
                                       textStyle: const TextStyle(
                                           color: Colors.white,
@@ -144,7 +178,7 @@ class _HomePageState extends State<HomePage> {
                                   childAspectRatio: 2,
                                   children: <Widget>[
                                     Text(
-                                      "3",
+                                      userTeam.stats.wins.toString(),
                                       textAlign: TextAlign.end,
                                       style: GoogleFonts.getFont("Poppins",
                                           textStyle: const TextStyle(
@@ -164,7 +198,7 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                     ),
                                     Text(
-                                      "1",
+                                      userTeam.stats.losses.toString(),
                                       textAlign: TextAlign.end,
                                       style: GoogleFonts.getFont("Poppins",
                                           textStyle: const TextStyle(
@@ -184,7 +218,7 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                     ),
                                     Text(
-                                      "153",
+                                      userTeam.stats.highScore.toString(),
                                       textAlign: TextAlign.end,
                                       style: GoogleFonts.getFont("Poppins",
                                           textStyle: const TextStyle(
@@ -204,37 +238,9 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                     )
                                   ],
-                                )
-                                // Row(children: [
-                                //                             Column(
-                                //                               children: [
-
-                                //                               ],
-                                //                             ),
-                                //                             Column(
-                                //                               children: [
-
-                                //                               ],
-                                //                             )
-                                //                           ]),
-                                ),
+                                )),
                           ),
                         ),
-                        // Column(
-                        //   children: [
-                        //     Row(children: [
-                        //       Column(
-                        //         children: const [Text("1"), Text("3")],
-                        //       ),
-                        //       Column(
-                        //         children: const [
-                        //           Text("MATCHES LEFT"),
-                        //           Text("MACTHES TILL US"),
-                        //         ],
-                        //       )
-                        //     ])
-                        //   ],
-                        // )
                       ],
                     )
                   ]),
@@ -283,7 +289,7 @@ class _HomePageState extends State<HomePage> {
                                       fontSize: 13)),
                             ),
                             Text(
-                              "5",
+                              nextMatch.matchNumber.toString(),
                               style: GoogleFonts.getFont("Poppins",
                                   textStyle: const TextStyle(
                                       color: Colors.white,
@@ -292,10 +298,9 @@ class _HomePageState extends State<HomePage> {
                             )
                           ],
                         ),
-
                         Expanded(
                             child: SizedBox(
-                          height: 150,
+                          height: 160,
                           child: Padding(
                               padding: const EdgeInsets.only(left: 60.0),
                               child: GridView.count(
@@ -309,7 +314,8 @@ class _HomePageState extends State<HomePage> {
                                   physics: const NeverScrollableScrollPhysics(),
                                   children: <Widget>[
                                     Text(
-                                      "16236",
+                                      nextMatch.userAlliancePartner.teamNumber
+                                          .toString(),
                                       textAlign: TextAlign.end,
                                       style: GoogleFonts.getFont("Poppins",
                                           textStyle: const TextStyle(
@@ -330,12 +336,20 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                     ),
                                     Text(
-                                      "RED",
+                                      nextMatch.userAllianceColor ==
+                                              AllianceColors.RED
+                                          ? "RED"
+                                          : "BLUE",
                                       textAlign: TextAlign.end,
                                       style: GoogleFonts.getFont("Poppins",
-                                          textStyle: const TextStyle(
-                                              color: Color.fromRGBO(
-                                                  255, 63, 63, 1),
+                                          textStyle: TextStyle(
+                                              color:
+                                                  nextMatch.userAllianceColor ==
+                                                          AllianceColors.RED
+                                                      ? const Color.fromRGBO(
+                                                          255, 63, 63, 1)
+                                                      : const Color.fromRGBO(
+                                                          54, 98, 255, 1),
                                               fontWeight: FontWeight.w700,
                                               fontSize: 20)),
                                     ),
@@ -352,7 +366,7 @@ class _HomePageState extends State<HomePage> {
                                       ),
                                     ),
                                     Text(
-                                      "3",
+                                      DateFormat('h:mm a').format(nextMatch.startTime),
                                       textAlign: TextAlign.end,
                                       style: GoogleFonts.getFont("Poppins",
                                           textStyle: const TextStyle(
@@ -361,9 +375,9 @@ class _HomePageState extends State<HomePage> {
                                               fontSize: 20)),
                                     ),
                                     Padding(
-                                      padding: const EdgeInsets.only(top: 5.0),
+                                      padding: const EdgeInsets.only(top: 7.0),
                                       child: Text(
-                                        "MATCHES TILL US",
+                                        "START TIME",
                                         textAlign: TextAlign.left,
                                         style: GoogleFonts.getFont("Poppins",
                                             textStyle: const TextStyle(
@@ -372,31 +386,29 @@ class _HomePageState extends State<HomePage> {
                                                 fontSize: 12)),
                                       ),
                                     )
+                                    // Text(
+                                    //   "3",
+                                    //   textAlign: TextAlign.end,
+                                    //   style: GoogleFonts.getFont("Poppins",
+                                    //       textStyle: const TextStyle(
+                                    //           color: Colors.white,
+                                    //           fontWeight: FontWeight.w700,
+                                    //           fontSize: 20)),
+                                    // ),
+                                    // Padding(
+                                    //   padding: const EdgeInsets.only(top: 5.0),
+                                    //   child: Text(
+                                    //     "MATCHES TILL US",
+                                    //     textAlign: TextAlign.left,
+                                    //     style: GoogleFonts.getFont("Poppins",
+                                    //         textStyle: const TextStyle(
+                                    //             color: Colors.white,
+                                    //             fontWeight: FontWeight.w600,
+                                    //             fontSize: 12)),
+                                    //   ),
+                                    // )
                                   ])),
                         )),
-
-                        // Padding(
-                        //   padding: const EdgeInsets.only(left: 32.0),
-                        //   child: Column(
-                        //     children: [
-                        //       Row(
-                        //         children: [
-
-                        //         ],
-                        //       ),
-                        //       Row(
-                        //         children: [
-
-                        //         ],
-                        //       ),
-                        //       Row(
-                        //         children: [
-
-                        //         ],
-                        //       )
-                        //     ],
-                        //   ),
-                        // )
                       ],
                     )
                   ]),
@@ -430,234 +442,78 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                     ),
-                    Row(
-                      children: [
-                        Text(
-                          "16236",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 11)),
-                        ),
-                        Text(
-                          "    MATCH 1",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11)),
-                        ),
-                        Text(
-                          "    153 POINTS",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11)),
-                        ),
-                        Text(
-                          "   WIN    ",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Color.fromRGBO(90, 255, 63, 1),
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11)),
-                        ),
-                        OutlinedButton(
-                            onPressed: null,
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.all(8),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(34.0)),
-                              side: const BorderSide(
-                                  width: 2.0,
-                                  color: Color.fromRGBO(90, 255, 63, 1)),
-                            ),
-                            child: Text(
-                              "VIEW MATCH",
-                              style: GoogleFonts.getFont("Poppins",
-                                  textStyle: const TextStyle(
-                                      color: Color.fromRGBO(90, 255, 63, 1),
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 9)),
-                            ))
-                      ],
-                    ),
-                    const Divider(
-                      color: Color.fromRGBO(155, 155, 155, 0.49),
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          "20399",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 11)),
-                        ),
-                        Text(
-                          "    MATCH 2",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11)),
-                        ),
-                        Text(
-                          "    22 POINTS",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11)),
-                        ),
-                        Text(
-                          "   LOSS    ",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Color.fromRGBO(255, 63, 63, 1),
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11)),
-                        ),
-                        OutlinedButton(
-                            onPressed: null,
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.all(8),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(34.0)),
-                              side: const BorderSide(
-                                  width: 2.0,
-                                  color: Color.fromRGBO(90, 255, 63, 1)),
-                            ),
-                            child: Text(
-                              "VIEW MATCH",
-                              style: GoogleFonts.getFont("Poppins",
-                                  textStyle: const TextStyle(
-                                      color: Color.fromRGBO(90, 255, 63, 1),
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 9)),
-                            ))
-                      ],
-                    ),
-                    const Divider(
-                      color: Color.fromRGBO(155, 155, 155, 0.49),
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          "10746",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 11)),
-                        ),
-                        Text(
-                          "    MATCH 3",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11)),
-                        ),
-                        Text(
-                          "    142 POINTS",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11)),
-                        ),
-                        Text(
-                          "   WIN    ",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Color.fromRGBO(90, 255, 63, 1),
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11)),
-                        ),
-                        OutlinedButton(
-                            onPressed: null,
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.all(8),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(34.0)),
-                              side: const BorderSide(
-                                  width: 2.0,
-                                  color: Color.fromRGBO(90, 255, 63, 1)),
-                            ),
-                            child: Text(
-                              "VIEW MATCH",
-                              style: GoogleFonts.getFont("Poppins",
-                                  textStyle: const TextStyle(
-                                      color: Color.fromRGBO(90, 255, 63, 1),
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 9)),
-                            ))
-                      ],
-                    ),
-                    const Divider(
-                      color: Color.fromRGBO(155, 155, 155, 0.49),
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          "19456",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 11)),
-                        ),
-                        Text(
-                          "    MATCH 4",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11)),
-                        ),
-                        Text(
-                          "    102 POINTS",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11)),
-                        ),
-                        Text(
-                          "   WIN    ",
-                          style: GoogleFonts.getFont("Poppins",
-                              textStyle: const TextStyle(
-                                  color: Color.fromRGBO(90, 255, 63, 1),
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 11)),
-                        ),
-                        OutlinedButton(
-                            onPressed: null,
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.all(8),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(34.0)),
-                              side: const BorderSide(
-                                  width: 2.0,
-                                  color: Color.fromRGBO(90, 255, 63, 1)),
-                            ),
-                            child: Text(
-                              "VIEW MATCH",
-                              style: GoogleFonts.getFont("Poppins",
-                                  textStyle: const TextStyle(
-                                      color: Color.fromRGBO(90, 255, 63, 1),
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 9)),
-                            ))
-                      ],
-                    ),
-                    const Divider(
-                      color: Color.fromRGBO(155, 155, 155, 0.49),
-                    )
+                    for (var match in databaseService.getTeamMatchResults())
+                      Column(
+                        children: [
+                          (Row(
+                            children: [
+                              Text(
+                                match.userAlliancePartner.teamNumber.toString(),
+                                style: GoogleFonts.getFont("Poppins",
+                                    textStyle: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w400,
+                                        fontSize: 11)),
+                              ),
+                              Text(
+                                "    MATCH " + match.matchNumber.toString(),
+                                style: GoogleFonts.getFont("Poppins",
+                                    textStyle: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 11)),
+                              ),
+                              Text(
+                                "    " + (match.userAllianceColor == AllianceColors.RED ? match.redAllianceTotalPoints.toString() : match.blueAllianceTotalPoints.toString()) + " POINTS",
+                                style: GoogleFonts.getFont("Poppins",
+                                    textStyle: const TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 11)),
+                              ),
+                              Text(
+                                "   " + (match.userAllianceColor == match.winningAlliance ? "WIN" : "LOSS") + "    ",
+                                style: GoogleFonts.getFont("Poppins",
+                                    textStyle: TextStyle(
+                                        color: match.userAllianceColor == match.winningAlliance ? Color.fromRGBO(90, 255, 63, 1) : Color.fromRGBO(255, 63, 63, 1),
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 11)),
+                              ),
+                              OutlinedButton(
+                                  onPressed: () {
+                                    HapticFeedback.heavyImpact();
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (context) =>
+                                              MatchOverviewPage(match)),
+                                    );
+                                  },
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.all(8),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(34.0)),
+                                    side: const BorderSide(
+                                        width: 2.0,
+                                        color: Color.fromRGBO(90, 255, 63, 1)),
+                                  ),
+                                  child: Text(
+                                    "VIEW MATCH",
+                                    style: GoogleFonts.getFont("Poppins",
+                                        textStyle: const TextStyle(
+                                            color:
+                                                Color.fromRGBO(90, 255, 63, 1),
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 9)),
+                                  ))
+                            ],
+                          )),
+                          const Divider(
+                            color: Color.fromRGBO(155, 155, 155, 0.49),
+                          ),
+                        ],
+                      ),
                   ]),
                 ),
               ),

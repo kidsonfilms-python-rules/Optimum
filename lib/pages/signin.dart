@@ -1,5 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:ftc_scouting_app/services/database.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -58,6 +60,7 @@ class _SignInState extends State<SignIn> {
                     ),
                     GradientOutlinedButton(
                         onPressed: () {
+                          HapticFeedback.heavyImpact();
                           setState(() {
                             _formStep = 2;
                           });
@@ -86,6 +89,7 @@ class _SignInState extends State<SignIn> {
                     ),
                     GestureDetector(
                       onTap: () {
+                        HapticFeedback.heavyImpact();
                         print("ok so my dudes we got a loner");
                         setState(() {
                           _formStep = 2;
@@ -155,11 +159,16 @@ class _SignInState extends State<SignIn> {
                           height: 10,
                         ),
                         GradientOutlinedButton(
-                            onPressed: () {
+                            onPressed: () async {
+                              HapticFeedback.heavyImpact();
+                              DatabaseService databaseService =
+                                  DatabaseService();
+                              await databaseService.initService(16236, "uscanosuq");
                               Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                      builder: (context) => const HomePage()));
+                                      builder: (context) =>
+                                          HomePage(databaseService)));
                             },
                             // style: OutlinedButton.styleFrom(
                             //   padding: const EdgeInsets.only(left: 36, right: 36),
@@ -185,6 +194,7 @@ class _SignInState extends State<SignIn> {
                         ),
                         GestureDetector(
                           onTap: () {
+                            HapticFeedback.heavyImpact();
                             showDialog(
                                 context: context,
                                 builder: (BuildContext context) {

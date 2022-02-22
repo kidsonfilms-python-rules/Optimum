@@ -40,9 +40,17 @@ dependencies:
   url_launcher: ^6.0.20
   material_floating_search_bar: ^0.3.6
   flutter_svg: ^0.22.0
+  firebase_core: #^1.4.0
+  # firebase_analytics: ^8.0.2
+  firebase_auth: #^3.0.1
+  cloud_firestore: #^2.4.0
+  http: ^0.13.4
+  shared_preferences: ^2.0.13
+  intl: ^0.17.0
   
 
 dev_dependencies:
+  flutter_launcher_icons:
   flutter_test:
     sdk: flutter
 
@@ -80,6 +88,7 @@ flutter:
     - assets/images/icons/app_settings.svg
     - assets/images/icons/legal.svg
     - assets/images/icons/about_app.svg
+    - assets/images/background/shapes.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
@@ -106,3 +115,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+
+flutter_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/app/icon.png"
+  # adaptive_icon_background: "#000000"
+  # adaptive_icon_foreground: "assets/app/icon.png"
+  remove_alpha_ios: true

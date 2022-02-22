@@ -1,25 +1,173 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ftc_scouting_app/classes/team.dart';
+import 'package:ftc_scouting_app/classes/teamStats.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:rive/rive.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TeamOverview extends StatefulWidget {
   final FTCTeam teamInfo;
-  const TeamOverview(this.teamInfo, {Key? key}) : super(key: key);
+  final Map<int, FTCTeam> teamAlliances;
+  const TeamOverview(this.teamInfo, this.teamAlliances, {Key? key})
+      : super(key: key);
 
   @override
-  _TeamOverviewState createState() => _TeamOverviewState(teamInfo);
+  _TeamOverviewState createState() =>
+      _TeamOverviewState(teamInfo, teamAlliances);
 }
 
 class _TeamOverviewState extends State<TeamOverview> {
   final FTCTeam teamInfo;
-  _TeamOverviewState(this.teamInfo);
+  final Map<int, FTCTeam> teamAlliances;
+  _TeamOverviewState(this.teamInfo, this.teamAlliances);
 
   var following = false;
+  // var sumNum = (1 << 1) |
+  //     (1 << 2) |
+  //     (1 << 3) |
+  //     (1 << 11) |
+  //     (1 << 12) |
+  //     (1 << 13) |
+  //     (1 << 14) |
+  //     (1 << 15) |
+  //     (1 << 21) |
+  //     (1 << 22) |
+  //     (1 << 23);
+
+  // SKILLS HASH DECODING CHART
+  // --------------------------
+  // BIT  |  CATEGORY  | SKILL
+  // -----|------------|-------
+  //   1  |   AUTON    | Frieght Deposit (SH)/Barcode Detection
+  //   2  |   AUTON    | Duck Carousel
+  //   3  |   AUTON    | Warehouse Parking
+  //   4  |   AUTON    | Storage Unit Parking
+  //   5  |   AUTON    | Freight Storage Unit Deposit
+  //   6  |   AUTON    | Reserved
+  //   7  |   AUTON    | Reserved
+  //   8  |   AUTON    | Reserved
+  //   9  |   AUTON    | Reserved
+  //  10  |   AUTON    | Reserved
+  //  11  |   DRIVER   | Shared Shipping Hub
+  //  12  |   DRIVER   | Alliance Shipping Hub - Level 1
+  //  13  |   DRIVER   | Alliance Shipping Hub - Level 2
+  //  14  |   DRIVER   | Alliance Shipping Hub - Level 3
+  //  15  |   DRIVER   | Storage Unit
+  //  16  |   DRIVER   | Reserved
+  //  17  |   DRIVER   | Reserved
+  //  18  |   DRIVER   | Reserved
+  //  19  |   DRIVER   | Reserved
+  //  20  |   DRIVER   | Reserved
+  //  21  |   ENDGAME  | Deliver Duck
+  //  22  |   ENDGAME  | Balanced Alliance Shipping Hub
+  //  23  |   ENDGAME  | Leaning Shared Shipping Hub
+  //  24  |   ENDGAME  | Parking in Warehouse
+  //  25  |   ENDGAME  | Capping (no cap)
+  //  26  |   ENDGAME  | Reserved
+  //  27  |   ENDGAME  | Reserved
+  //  28  |   ENDGAME  | Reserved
+  //  29  |   ENDGAME  | Reserved
+  //  30  |   ENDGAME  | Reserved
+  //  31  |    META    | Reserved
+  //  32  |    META    | Reserved
+
+  List<List<String>> decodeMissionSkills(n) {
+    var i = 0; // Decoding 32-bit "hashed" number of skills
+    List<String> autonCan = [];
+    List<String> autonCannot = [];
+    List<String> driverCan = [];
+    List<String> driverCannot = [];
+    List<String> endgameCan = [];
+    List<String> endgameCannot = [];
+
+    Map<int, String> bitToString = {
+      1: "Frieght Deposit (SH)/Barcode Detection",
+      2: "Duck Carousel",
+      3: "Warehouse Parking",
+      4: "Storage Unit Parking",
+      5: "Freight Storage Unit Deposit",
+      11: "Shared Shipping Hub",
+      12: "Alliance Shipping Hub - Level 1",
+      13: "Alliance Shipping Hub - Level 2",
+      14: "Alliance Shipping Hub - Level 3",
+      15: "Storage Unit",
+      21: "Deliver Duck",
+      22: "Balanced Alliance Shipping Hub",
+      23: "Leaning Shared Shipping Hub",
+      24: "Parking in Warehouse",
+      25: "Capping",
+    };
+    const reservedBits = [
+      6,
+      7,
+      8,
+      9,
+      10,
+      16,
+      17,
+      18,
+      19,
+      20,
+      26,
+      27,
+      28,
+      29,
+      30
+    ];
+
+    while (i < 32) {
+      if (reservedBits.where((element) => element == i).toList().isEmpty &&
+          i != 0) {
+        var x = n & 0x1; // Bitwise AND operation
+        if (x == 1) {
+          // if bit == 1, can do, else cannot
+          if (i <= 10) {
+            autonCan.add(bitToString[i] ?? "NULL");
+          } else if (i <= 20) {
+            driverCan.add(bitToString[i] ?? "NULL");
+          } else if (i <= 30) {
+            endgameCan.add(bitToString[i] ?? "NULL");
+          }
+        } else {
+          if (i <= 10) {
+            autonCannot.add(bitToString[i] ?? "NULL");
+          } else if (i <= 20) {
+            driverCannot.add(bitToString[i] ?? "NULL");
+          } else if (i <= 30) {
+            endgameCannot.add(bitToString[i] ?? "NULL");
+          }
+        }
+      }
+      n = n >> 1; //right shift og number
+      i++; // Rinse. Repeat
+    }
+
+    return [
+      autonCan,
+      autonCannot,
+      driverCan,
+      driverCannot,
+      endgameCan,
+      endgameCannot
+    ];
+  }
+
+  String allianceMatchString = "LOADING...";
 
   @override
   Widget build(BuildContext context) {
+    allianceMatchString = teamAlliances.containsValue(teamInfo)
+        ? ("MATCH " +
+            teamAlliances.keys
+                .firstWhere((element) =>
+                    teamAlliances[element]!.teamNumber == teamInfo.teamNumber)
+                .toString() +
+            " ALLIANCE PARTNER  ")
+        : "NEVER ALLIANCE PARTNER  ";
+    var skills = teamInfo.isUser
+        ? decodeMissionSkills(teamInfo.abilities)
+        : [[], [], [], [], [], []];
     int _ratingLevel = 5;
     if (teamInfo.teamMatch >= 0 && teamInfo.teamMatch < 20) {
       _ratingLevel = 1;
@@ -76,9 +224,15 @@ class _TeamOverviewState extends State<TeamOverview> {
               icon: const Icon(Icons.more_vert))
         ],
         centerTitle: true,
-        title: teamInfo.logo != "" ? Image.network(
-            teamInfo.logo,
-            cacheWidth: 93) : Text(teamInfo.teamNickname + " " + teamInfo.teamNumber.toString()),
+        title: teamInfo.logo != ""
+            ? Image.network(teamInfo.logo, cacheWidth: 93)
+            : Text(
+                teamInfo.teamNickname + " " + teamInfo.teamNumber.toString(),
+                overflow: TextOverflow.fade,
+                style: GoogleFonts.getFont('Poppins',
+                    fontWeight: FontWeight.w200,
+                    textStyle: const TextStyle(color: Colors.white)),
+              ),
       ),
       backgroundColor: Colors.black,
       body: SingleChildScrollView(
@@ -91,71 +245,85 @@ class _TeamOverviewState extends State<TeamOverview> {
                   ColorFiltered(
                       colorFilter: ColorFilter.mode(
                           Colors.black.withOpacity(0.8), BlendMode.dstATop),
-                      child: teamInfo.robotThumbnail != "" ? Image.network(
-                        teamInfo.robotThumbnail,
-                        cacheHeight: 213,
-                      ) : Image.network(
-                        "https://lh5.googleusercontent.com/LRoSg9m2BTWX2CDjRNexjROhjRt_vRsdsT73N5PcAfbWlidJ-XBNjUXnRUztR0krXpbau5e73JzAihw2HLG9pGZQw2Ol2pEd38c6VhK1je7wx_9EGjYlta8J1NZ-zFVm3MfkSBts7A",
-                        cacheHeight: 213,
-                      )),
+                      child: teamInfo.robotThumbnail != ""
+                          ? Image.network(
+                              teamInfo.robotThumbnail,
+                              cacheHeight: 213,
+                            )
+                          : Image.network(
+                              "https://lh5.googleusercontent.com/LRoSg9m2BTWX2CDjRNexjROhjRt_vRsdsT73N5PcAfbWlidJ-XBNjUXnRUztR0krXpbau5e73JzAihw2HLG9pGZQw2Ol2pEd38c6VhK1je7wx_9EGjYlta8J1NZ-zFVm3MfkSBts7A",
+                              cacheHeight: 213,
+                            )),
                   Column(
                     children: [
                       const SizedBox(height: 130),
                       Row(
                         children: [
                           Text(
-                            "MATCH 5 ALLIANCE PARTNER  ",
+                            allianceMatchString, //"MATCH 5 ALLIANCE PARTNER  ",
                             style: GoogleFonts.getFont("Poppins",
                                 textStyle: const TextStyle(
                                     color: Color.fromRGBO(216, 216, 216, 1),
                                     fontWeight: FontWeight.w500,
                                     fontSize: 11)),
                           ),
-                          OutlinedButton(
-                            onPressed: () => {
-                              setState((() {
-                                if (following) {
-                                  following = false;
-                                  teamInfo.following = false;
-                                } else {
-                                  following = true;
-                                  teamInfo.following = true;
-                                }
-                                HapticFeedback.heavyImpact();
-                              }))
-                            },
-                            child: Text(
-                              !following ? "FOLLOW" : "FOLLOWING",
-                              style: GoogleFonts.getFont("Poppins",
-                                  textStyle: TextStyle(
-                                      color: !following
-                                          ? const Color.fromRGBO(255, 92, 0, 1)
-                                          : Colors.white,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13)),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.all(8),
-                              backgroundColor: !following
-                                  ? Colors.black
-                                  : const Color.fromRGBO(255, 92, 0, 1),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(34.0)),
-                              side: const BorderSide(
-                                  width: 2.0,
-                                  color: Color.fromRGBO(255, 92, 0, 1)),
-                            ),
-                          ),
+                          teamInfo.isUser
+                              ? OutlinedButton(
+                                  onPressed: () async {
+                                    var prefs =
+                                        await SharedPreferences.getInstance();
+                                    setState((() {
+                                      if (following) {
+                                        following = false;
+                                        teamInfo.following = false;
+                                        prefs.setBool(
+                                            "following-" +
+                                                teamInfo.teamNumber.toString(),
+                                            false);
+                                      } else {
+                                        following = true;
+                                        teamInfo.following = true;
+                                        prefs.setBool(
+                                            "following-" +
+                                                teamInfo.teamNumber.toString(),
+                                            true);
+                                      }
+                                      HapticFeedback.heavyImpact();
+                                    }));
+                                  },
+                                  child: Text(
+                                    !following ? "FOLLOW" : "FOLLOWING",
+                                    style: GoogleFonts.getFont("Poppins",
+                                        textStyle: TextStyle(
+                                            color: !following
+                                                ? teamInfo.theme
+                                                : Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13)),
+                                  ),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.all(8),
+                                    backgroundColor: !following
+                                        ? Colors.black
+                                        : teamInfo.theme,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(34.0)),
+                                    side: BorderSide(
+                                        width: 2.0, color: teamInfo.theme),
+                                  ),
+                                )
+                              : const Text(""),
                           const SizedBox(
                             width: 10,
                           ),
                           OutlinedButton(
                             onPressed: null,
                             child: Text(
-                              "CONTACT",
+                              teamInfo.isUser ? "CONTACT" : "INVITE TO OPTIMUM",
                               style: GoogleFonts.getFont("Poppins",
-                                  textStyle: const TextStyle(
-                                      color: Color.fromRGBO(255, 92, 0, 1),
+                                  textStyle: TextStyle(
+                                      color: teamInfo.theme,
                                       fontWeight: FontWeight.w600,
                                       fontSize: 13)),
                             ),
@@ -164,9 +332,8 @@ class _TeamOverviewState extends State<TeamOverview> {
                               backgroundColor: Colors.black,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(34.0)),
-                              side: const BorderSide(
-                                  width: 2.0,
-                                  color: Color.fromRGBO(255, 92, 0, 1)),
+                              side:
+                                  BorderSide(width: 2.0, color: teamInfo.theme),
                             ),
                           ),
                         ],
@@ -257,13 +424,21 @@ class _TeamOverviewState extends State<TeamOverview> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.arrow_drop_up,
-                                color: Color.fromRGBO(90, 255, 63, 1),
-                                size: 50.0),
+                            teamInfo.stats.trend == TeamStatsTrend.UP
+                                ? const Icon(Icons.arrow_drop_up,
+                                    color: Color.fromRGBO(90, 255, 63, 1),
+                                    size: 50.0)
+                                : (teamInfo.stats.trend == TeamStatsTrend.DOWN
+                                    ? const Icon(Icons.arrow_drop_down,
+                                        color: Color.fromRGBO(255, 63, 63, 1),
+                                        size: 50.0)
+                                    : const SizedBox(
+                                        width: 50,
+                                      )),
                             Column(
                               children: [
                                 Text(
-                                  "#1",
+                                  "#" + teamInfo.stats.rank.toString(),
                                   style: GoogleFonts.getFont("Poppins",
                                       textStyle: const TextStyle(
                                           color: Colors.white,
@@ -279,7 +454,8 @@ class _TeamOverviewState extends State<TeamOverview> {
                                           fontSize: 11)),
                                 ),
                                 Text(
-                                  "OUT OF 40",
+                                  "OUT OF " +
+                                      teamInfo.stats.totalTeams.toString(),
                                   style: GoogleFonts.getFont("Poppins",
                                       textStyle: const TextStyle(
                                           color: Colors.white,
@@ -305,7 +481,7 @@ class _TeamOverviewState extends State<TeamOverview> {
                                   childAspectRatio: 2,
                                   children: <Widget>[
                                     Text(
-                                      "3",
+                                      teamInfo.stats.wins.toString(),
                                       textAlign: TextAlign.end,
                                       style: GoogleFonts.getFont("Poppins",
                                           textStyle: const TextStyle(
@@ -325,7 +501,7 @@ class _TeamOverviewState extends State<TeamOverview> {
                                       ),
                                     ),
                                     Text(
-                                      "1",
+                                      teamInfo.stats.losses.toString(),
                                       textAlign: TextAlign.end,
                                       style: GoogleFonts.getFont("Poppins",
                                           textStyle: const TextStyle(
@@ -345,7 +521,7 @@ class _TeamOverviewState extends State<TeamOverview> {
                                       ),
                                     ),
                                     Text(
-                                      "153",
+                                      teamInfo.stats.highScore.toString(),
                                       textAlign: TextAlign.end,
                                       style: GoogleFonts.getFont("Poppins",
                                           textStyle: const TextStyle(
@@ -404,432 +580,274 @@ class _TeamOverviewState extends State<TeamOverview> {
               const SizedBox(
                 height: 22,
               ),
-              Card(
-                color: const Color.fromRGBO(29, 29, 29, 1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.emoji_objects_outlined,
-                          color: Colors.white,
-                        ),
-                        Text("  STRENGTHS",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.check,
-                            color: Color.fromRGBO(90, 255, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Can be annoying",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.check,
-                            color: Color.fromRGBO(90, 255, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Is vroom vroom",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    const SizedBox(
+              teamInfo.isUser
+                  ? Card(
+                      color: const Color.fromRGBO(29, 29, 29, 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30.0),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.emoji_objects_outlined,
+                                color: Colors.white,
+                              ),
+                              Text("  STRENGTHS",
+                                  style: GoogleFonts.getFont("Poppins",
+                                      textStyle: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13))),
+                            ],
+                          ),
+                          for (var strength in teamInfo.teamStrengths)
+                            (Row(
+                              children: [
+                                const Icon(Icons.check,
+                                    color: Color.fromRGBO(90, 255, 63, 1)),
+                                const SizedBox(
+                                  width: 20,
+                                ),
+                                Text(strength,
+                                    style: GoogleFonts.getFont("Poppins",
+                                        textStyle: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 13))),
+                              ],
+                            )),
+                          const SizedBox(
+                            height: 22,
+                          ),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.bug_report,
+                                color: Colors.white,
+                              ),
+                              Text("  WEAKNESSES",
+                                  style: GoogleFonts.getFont("Poppins",
+                                      textStyle: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13))),
+                            ],
+                          ),
+                          for (var weakness in teamInfo.teamWeaknesses)
+                            (Row(
+                              children: [
+                                const Icon(Icons.close,
+                                    color: Color.fromRGBO(255, 63, 63, 1)),
+                                const SizedBox(
+                                  width: 20,
+                                ),
+                                Text(weakness,
+                                    style: GoogleFonts.getFont("Poppins",
+                                        textStyle: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 13))),
+                              ],
+                            )),
+                        ]),
+                      ),
+                    )
+                  : Text(""),
+              teamInfo.isUser
+                  ? const SizedBox(
                       height: 22,
-                    ),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.bug_report,
-                          color: Colors.white,
-                        ),
-                        Text("  WEAKNESSES",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.close,
-                            color: Color.fromRGBO(255, 63, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Cannot hang",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.close,
-                            color: Color.fromRGBO(255, 63, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Cannot drop team marker",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.close,
-                            color: Color.fromRGBO(255, 63, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Cannot do anything",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                  ]),
-                ),
-              ),
-              const SizedBox(
-                height: 22,
-              ),
-              Card(
-                color: const Color.fromRGBO(29, 29, 29, 1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.bolt_outlined,
-                          color: Colors.white,
-                        ),
-                        Text("  AUTONOMOUS",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.check,
-                            color: Color.fromRGBO(90, 255, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Frieght Deposit (SH)/Barcode Detection",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.check,
-                            color: Color.fromRGBO(90, 255, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Duck Carousel",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.check,
-                            color: Color.fromRGBO(90, 255, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Warehouse Parking",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.close,
-                            color: Color.fromRGBO(255, 63, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Storage Unit Parking",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.close,
-                            color: Color.fromRGBO(255, 63, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Frieght Storage Unit Deposit",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                  ]),
-                ),
-              ),
-              const SizedBox(
-                height: 22,
-              ),
-              Card(
-                color: const Color.fromRGBO(29, 29, 29, 1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.gamepad_outlined,
-                          color: Colors.white,
-                        ),
-                        Text("  DRIVER-CONTROLLED",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.check,
-                            color: Color.fromRGBO(90, 255, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Shared Shipping Hub",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.check,
-                            color: Color.fromRGBO(90, 255, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Alliance Shipping Hub - Level 1",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.check,
-                            color: Color.fromRGBO(90, 255, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Storage Unit",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.close,
-                            color: Color.fromRGBO(255, 63, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Alliance Shipping Hub - Level 2",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.close,
-                            color: Color.fromRGBO(255, 63, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Alliance Shipping Hub - Level 3",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                  ]),
-                ),
-              ),
-              const SizedBox(
-                height: 22,
-              ),
-              Card(
-                color: const Color.fromRGBO(29, 29, 29, 1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30.0),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.timer,
-                          color: Colors.white,
-                        ),
-                        Text("  END GAME",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.check,
-                            color: Color.fromRGBO(90, 255, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Deliver Duck",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.check,
-                            color: Color.fromRGBO(90, 255, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Balanced Alliance Shipping Hub",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.check,
-                            color: Color.fromRGBO(90, 255, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Unbalanced Shared Shipping Hub",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.close,
-                            color: Color.fromRGBO(255, 63, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Parking in Warehouse",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                    Row(
-                      children: [
-                        const Icon(Icons.close,
-                            color: Color.fromRGBO(255, 63, 63, 1)),
-                        const SizedBox(
-                          width: 20,
-                        ),
-                        Text("Capping",
-                            style: GoogleFonts.getFont("Poppins",
-                                textStyle: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 13))),
-                      ],
-                    ),
-                  ]),
-                ),
-              )
+                    )
+                  : Text(""),
+              teamInfo.isUser
+                  ? Card(
+                      color: const Color.fromRGBO(29, 29, 29, 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30.0),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.bolt_outlined,
+                                color: Colors.white,
+                              ),
+                              Text("  AUTONOMOUS",
+                                  style: GoogleFonts.getFont("Poppins",
+                                      textStyle: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13))),
+                            ],
+                          ),
+                          for (var strength in skills[0])
+                            (Row(
+                              children: [
+                                const Icon(Icons.check,
+                                    color: Color.fromRGBO(90, 255, 63, 1)),
+                                const SizedBox(
+                                  width: 20,
+                                ),
+                                Text(strength,
+                                    style: GoogleFonts.getFont("Poppins",
+                                        textStyle: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 13))),
+                              ],
+                            )),
+                          for (var weakness in skills[1])
+                            (Row(
+                              children: [
+                                const Icon(Icons.close,
+                                    color: Color.fromRGBO(255, 63, 63, 1)),
+                                const SizedBox(
+                                  width: 20,
+                                ),
+                                Text(weakness,
+                                    style: GoogleFonts.getFont("Poppins",
+                                        textStyle: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 13))),
+                              ],
+                            )),
+                        ]),
+                      ),
+                    )
+                  : Text(""),
+              teamInfo.isUser
+                  ? const SizedBox(
+                      height: 22,
+                    )
+                  : Text(""),
+              teamInfo.isUser
+                  ? Card(
+                      color: const Color.fromRGBO(29, 29, 29, 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30.0),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.gamepad_outlined,
+                                color: Colors.white,
+                              ),
+                              Text("  DRIVER-CONTROLLED",
+                                  style: GoogleFonts.getFont("Poppins",
+                                      textStyle: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13))),
+                            ],
+                          ),
+                          for (var strength in skills[2])
+                            (Row(
+                              children: [
+                                const Icon(Icons.check,
+                                    color: Color.fromRGBO(90, 255, 63, 1)),
+                                const SizedBox(
+                                  width: 20,
+                                ),
+                                Text(strength,
+                                    style: GoogleFonts.getFont("Poppins",
+                                        textStyle: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 13))),
+                              ],
+                            )),
+                          for (var weakness in skills[3])
+                            (Row(
+                              children: [
+                                const Icon(Icons.close,
+                                    color: Color.fromRGBO(255, 63, 63, 1)),
+                                const SizedBox(
+                                  width: 20,
+                                ),
+                                Text(weakness,
+                                    style: GoogleFonts.getFont("Poppins",
+                                        textStyle: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 13))),
+                              ],
+                            )),
+                        ]),
+                      ),
+                    )
+                  : Text(""),
+              teamInfo.isUser
+                  ? const SizedBox(
+                      height: 22,
+                    )
+                  : Text(""),
+              teamInfo.isUser
+                  ? Card(
+                      color: const Color.fromRGBO(29, 29, 29, 1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(30.0),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.timer,
+                                color: Colors.white,
+                              ),
+                              Text("  END GAME",
+                                  style: GoogleFonts.getFont("Poppins",
+                                      textStyle: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 13))),
+                            ],
+                          ),
+                          for (var strength in skills[4])
+                            (Row(
+                              children: [
+                                const Icon(Icons.check,
+                                    color: Color.fromRGBO(90, 255, 63, 1)),
+                                const SizedBox(
+                                  width: 20,
+                                ),
+                                Text(strength,
+                                    style: GoogleFonts.getFont("Poppins",
+                                        textStyle: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 13))),
+                              ],
+                            )),
+                          for (var weakness in skills[5])
+                            (Row(
+                              children: [
+                                const Icon(Icons.close,
+                                    color: Color.fromRGBO(255, 63, 63, 1)),
+                                const SizedBox(
+                                  width: 20,
+                                ),
+                                Text(weakness,
+                                    style: GoogleFonts.getFont("Poppins",
+                                        textStyle: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w500,
+                                            fontSize: 13))),
+                              ],
+                            )),
+                        ]),
+                      ),
+                    )
+                  : Text("")
             ],
           ),
         ),

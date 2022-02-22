@@ -5,16 +5,21 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:ftc_scouting_app/pages/homepage.dart';
 import 'package:ftc_scouting_app/pages/discover.dart';
 import 'package:ftc_scouting_app/pages/settings/general.dart';
+import 'package:ftc_scouting_app/services/database.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class TeamProfilePage extends StatefulWidget {
-  const TeamProfilePage({Key? key}) : super(key: key);
+  final DatabaseService dbService;
+  const TeamProfilePage(this.dbService, {Key? key}) : super(key: key);
 
   @override
-  _TeamProfilePageState createState() => _TeamProfilePageState();
+  _TeamProfilePageState createState() => _TeamProfilePageState(dbService);
 }
 
 class _TeamProfilePageState extends State<TeamProfilePage> {
+  final DatabaseService dbService;
+
+  _TeamProfilePageState(this.dbService);
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,12 +44,12 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
           if (n == 1) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const DiscoverPage()),
+              MaterialPageRoute(builder: (context) => DiscoverPage(dbService)),
             );
           } else if (n == 0) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const HomePage()),
+              MaterialPageRoute(builder: (context) => HomePage(dbService)),
             );
           }
         }, // (4)
@@ -88,7 +93,7 @@ class _TeamProfilePageState extends State<TeamProfilePage> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (context) =>
-                                        const GeneralSettingsPage()),
+                                        GeneralSettingsPage(dbService)),
                               );
                             },
                             child: Row(

@@ -33,9 +33,9 @@
     <br />
     <a href="https://github.com/kidsonfilms-python-rules/Optimum">View Demo</a>
     ·
-    <a href="https://github.com/kidsonfilms-python-rules/Optimum/issues">Report Bug</a>
+    <a href="https://github.com/kidsonfilms-python-rules/Optimum/issues/new">Report Bug</a>
     ·
-    <a href="https://github.com/kidsonfilms-python-rules/Optimum/issues">Request Feature</a>
+    <a href="https://github.com/kidsonfilms-python-rules/Optimum/issues/new">Request Feature</a>
   </p>
 </div>
 
