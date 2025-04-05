@@ -475,7 +475,7 @@ class _HomePageState extends State<HomePage> {
                                 "   " + (match.userAllianceColor == match.winningAlliance ? "WIN" : "LOSS") + "    ",
                                 style: GoogleFonts.getFont("Poppins",
                                     textStyle: TextStyle(
-                                        color: match.userAllianceColor == match.winningAlliance ? Color.fromRGBO(90, 255, 63, 1) : Color.fromRGBO(255, 63, 63, 1),
+                                        color: match.userAllianceColor == match.winningAlliance ? const Color.fromRGBO(90, 255, 63, 1) : const Color.fromRGBO(255, 63, 63, 1),
                                         fontWeight: FontWeight.w700,
                                         fontSize: 11)),
                               ),

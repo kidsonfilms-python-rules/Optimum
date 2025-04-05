@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:ftc_scouting_app/classes/match.dart';
+import 'package:ftc_scouting_app/services/utils/authService.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:ftc_scouting_app/classes/team.dart';
@@ -17,7 +19,7 @@ class FTCAPI {
                 eventCode),
         headers: <String, String>{
           'authorization':
-              "Basic [REDACTED]"
+              "Basic am9vc3dybGQ6OUY1MDUwQjctQ0VEMi00MzhBLUJBQUYtRjRDNDQyNzdDMjJE"
         });
 
     if (response.statusCode == 200) {
@@ -43,6 +45,61 @@ class FTCAPI {
     return teams;
   }
 
+  Future<bool> compValid(String eventCode, BuildContext context) async {
+    final response = await http.get(
+        Uri.parse(
+            'https://ftc-api.firstinspires.org/v2.0/2021/teams?eventCode=' +
+                eventCode),
+        headers: <String, String>{
+          'authorization':
+              "Basic am9vc3dybGQ6OUY1MDUwQjctQ0VEMi00MzhBLUJBQUYtRjRDNDQyNzdDMjJE"
+        });
+
+    if (response.statusCode == 200) {
+      // If the server did return a 200 OK response,
+      print("valid event id");
+      return true;
+    } else {
+      // If the server did not return a 200 OK response,
+      // then throw an exception.
+      AuthService().showAuthError(
+          context, "The Event Code you provided is invalid. Please try again.",
+          title: "Invalid Event Code");
+      print("invalid event id");
+      return false;
+    }
+  }
+
+  Future<FTCTeam> getTeam(int teamNumber) async {
+    final response = await http.get(
+        Uri.parse(
+            'https://ftc-api.firstinspires.org/v2.0/2021/teams?teamNumber=' +
+                teamNumber.toString()),
+        headers: <String, String>{
+          'authorization':
+              "Basic am9vc3dybGQ6OUY1MDUwQjctQ0VEMi00MzhBLUJBQUYtRjRDNDQyNzdDMjJE"
+        });
+
+    if (response.statusCode == 200) {
+      // If the server did return a 200 OK response,
+      // then parse the JSON.
+      var team = await jsonDecode(response.body)["teams"][0];
+      var prefs = await SharedPreferences.getInstance();
+      print("adding team to list");
+      var following =
+          prefs.getBool("following-" + team["teamNumber"].toString()) != null ||
+                  prefs.getBool("following-" + team["teamNumber"].toString()) !=
+                      false
+              ? true
+              : false;
+      return FTCTeam.fromJson(team, false);
+    } else {
+      // If the server did not return a 200 OK response,
+      // then throw an exception.
+      throw Exception('Failed to load teams');
+    }
+  }
+
   Future<List<FTCMatch>> getTeamSchedule(
       String eventCode, int teamNumber, List<FTCTeam> teams) async {
     List<FTCMatch> matches = [];
@@ -53,7 +110,7 @@ class FTCAPI {
             teamNumber.toString()),
         headers: <String, String>{
           'authorization':
-              "Basic [REDACTED]"
+              "Basic am9vc3dybGQ6OUY1MDUwQjctQ0VEMi00MzhBLUJBQUYtRjRDNDQyNzdDMjJE"
         });
 
     if (response.statusCode == 200) {
@@ -89,7 +146,7 @@ class FTCAPI {
             '?tournamentLevel=qual'),
         headers: <String, String>{
           'authorization':
-              "Basic [REDACTED]"
+              "Basic am9vc3dybGQ6OUY1MDUwQjctQ0VEMi00MzhBLUJBQUYtRjRDNDQyNzdDMjJE"
         });
 
     if (response.statusCode == 200) {
@@ -123,7 +180,7 @@ class FTCAPI {
             'https://ftc-api.firstinspires.org/v2.0/2021/matches/' + eventCode),
         headers: <String, String>{
           'authorization':
-              "Basic [REDACTED]"
+              "Basic am9vc3dybGQ6OUY1MDUwQjctQ0VEMi00MzhBLUJBQUYtRjRDNDQyNzdDMjJE"
         });
 
     print("GeTting MATCH RESULTS");
@@ -151,15 +208,18 @@ class FTCAPI {
     print("GOT MATCH RESULTS");
     return matches;
   }
+
   Future<List<FTCMatch>> getTeamMatchResults(
       String eventCode, int teamNumber, List<FTCTeam> teams) async {
     List<FTCMatch> matches = [];
     final response = await http.get(
-        Uri.parse(
-            'https://ftc-api.firstinspires.org/v2.0/2021/matches/' + eventCode + '?teamNumber=' + teamNumber.toString()),
+        Uri.parse('https://ftc-api.firstinspires.org/v2.0/2021/matches/' +
+            eventCode +
+            '?teamNumber=' +
+            teamNumber.toString()),
         headers: <String, String>{
           'authorization':
-              "Basic [REDACTED]"
+              "Basic am9vc3dybGQ6OUY1MDUwQjctQ0VEMi00MzhBLUJBQUYtRjRDNDQyNzdDMjJE"
         });
 
     print("GeTting MATCH RESULTS");
@@ -190,11 +250,11 @@ class FTCAPI {
 
   Future<List<dynamic>> refreshTeamRankings(String eventCode) async {
     final response = await http.get(
-        Uri.parse(
-            'https://ftc-api.firstinspires.org/v2.0/2021/rankings/' + eventCode),
+        Uri.parse('https://ftc-api.firstinspires.org/v2.0/2021/rankings/' +
+            eventCode),
         headers: <String, String>{
           'authorization':
-              "Basic [REDACTED]"
+              "Basic am9vc3dybGQ6OUY1MDUwQjctQ0VEMi00MzhBLUJBQUYtRjRDNDQyNzdDMjJE"
         });
 
     if (response.statusCode == 200) {

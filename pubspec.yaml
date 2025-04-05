@@ -47,6 +47,16 @@ dependencies:
   http: ^0.13.4
   shared_preferences: ^2.0.13
   intl: ^0.17.0
+  share_plus: ^3.1.0
+  flutter_markdown: ^0.6.9
+  provider: ^6.0.2
+  google_sign_in: ^5.2.4
+  # github_sign_in:
+  sign_in_with_apple: ^3.3.0
+  crypto: ^3.0.1
+  font_awesome_flutter: ^9.2.0
+  cron: ^0.4.0
+  flutter_phoenix: ^1.0.0
   
 
 dev_dependencies:
@@ -89,6 +99,11 @@ flutter:
     - assets/images/icons/legal.svg
     - assets/images/icons/about_app.svg
     - assets/images/background/shapes.png
+    - assets/app/icon.png
+    - assets/app/LOGOMARK+WORDMARK.png
+    - assets/platform/g-logo.png
+    - assets/platform/apple-white.png
+    - assets/platform/github-white.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.

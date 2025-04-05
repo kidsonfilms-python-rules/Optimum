@@ -1,3 +1,5 @@
+// ignore_for_file: constant_identifier_names
+
 import 'package:ftc_scouting_app/classes/team.dart';
 
 enum AllianceColors { RED, BLUE, BOTH }

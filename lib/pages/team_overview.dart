@@ -1,10 +1,15 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:ftc_scouting_app/classes/team.dart';
+import 'package:ftc_scouting_app/classes/teamConnection.dart';
 import 'package:ftc_scouting_app/classes/teamStats.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:rive/rive.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:share_plus/share_plus.dart';
 
 class TeamOverview extends StatefulWidget {
   final FTCTeam teamInfo;
@@ -194,27 +199,54 @@ class _TeamOverviewState extends State<TeamOverview> {
                   context: context,
                   builder: (BuildContext context) {
                     return Wrap(
-                      children: const [
+                      children: [
                         ListTile(
-                          tileColor: Color.fromRGBO(29, 29, 29, 1),
+                          onTap: () {
+                            HapticFeedback.heavyImpact();
+                            Share.share("Hey! check out " +
+                                teamInfo.teamNickname +
+                                " " +
+                                teamInfo.teamNumber.toString() +
+                                " on Optimum!");
+                          },
+                          tileColor: const Color.fromRGBO(29, 29, 29, 1),
                           textColor: Colors.white,
                           iconColor: Colors.white,
-                          leading: Icon(Icons.share),
-                          title: Text('Share'),
+                          leading: const Icon(Icons.share),
+                          title: const Text('Share'),
                         ),
+                        // teamInfo.isUser
+                        //     ? const ListTile(
+                        //         tileColor: Color.fromRGBO(29, 29, 29, 1),
+                        //         textColor: Colors.white,
+                        //         iconColor: Colors.white,
+                        //         leading: Icon(Icons.request_quote_outlined),
+                        //         title: Text('Request Alliance Brief'),
+                        //       )
+                        //     : const SizedBox(
+                        //         height: 0,
+                        //       ),
                         ListTile(
-                          tileColor: Color.fromRGBO(29, 29, 29, 1),
+                          onTap: () {
+                            HapticFeedback.heavyImpact();
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text("Reported Team " +
+                                  teamInfo.teamNickname +
+                                  " to Optimum Staff."),
+                              action: SnackBarAction(
+                                label: "UNDO",
+                                onPressed: () {
+                                  HapticFeedback.heavyImpact();
+                                },
+                              ),
+                            ));
+                            Navigator.of(context).pop();
+                          },
+                          tileColor: const Color.fromRGBO(29, 29, 29, 1),
                           textColor: Colors.white,
                           iconColor: Colors.white,
-                          leading: Icon(Icons.request_quote_outlined),
-                          title: Text('Request Alliance Brief'),
-                        ),
-                        ListTile(
-                          tileColor: Color.fromRGBO(29, 29, 29, 1),
-                          textColor: Colors.white,
-                          iconColor: Colors.white,
-                          leading: Icon(Icons.assistant_photo_outlined),
-                          title: Text('Report'),
+                          leading: const Icon(Icons.assistant_photo_outlined),
+                          title: const Text('Report'),
                         ),
                       ],
                     );
@@ -250,10 +282,13 @@ class _TeamOverviewState extends State<TeamOverview> {
                               teamInfo.robotThumbnail,
                               cacheHeight: 213,
                             )
-                          : Image.network(
-                              "https://lh5.googleusercontent.com/LRoSg9m2BTWX2CDjRNexjROhjRt_vRsdsT73N5PcAfbWlidJ-XBNjUXnRUztR0krXpbau5e73JzAihw2HLG9pGZQw2Ol2pEd38c6VhK1je7wx_9EGjYlta8J1NZ-zFVm3MfkSBts7A",
-                              cacheHeight: 213,
-                            )),
+                          : SizedBox(
+                              height: 210, child: Center(
+                                child: Text("HMMM? WHERE'S THE ROBOT?", style: GoogleFonts.exo(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                ),),
+                              ))),
                   Column(
                     children: [
                       const SizedBox(height: 130),
@@ -318,7 +353,109 @@ class _TeamOverviewState extends State<TeamOverview> {
                             width: 10,
                           ),
                           OutlinedButton(
-                            onPressed: null,
+                            onPressed: teamInfo.isUser
+                                ? () {
+                                    HapticFeedback.heavyImpact();
+                                    showModalBottomSheet(
+                                        shape: const RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.only(
+                                              topLeft: Radius.circular(16.0),
+                                              topRight: Radius.circular(16.0)),
+                                        ),
+                                        // backgroundColor: const Color.fromRGBO(29, 29, 29, 1),
+                                        backgroundColor: Colors.transparent,
+                                        barrierColor: Colors.transparent,
+                                        context: context,
+                                        builder: (context) {
+                                          return ClipRRect(
+                                              borderRadius:
+                                                  const BorderRadius.only(
+                                                      topLeft:
+                                                          Radius.circular(20),
+                                                      topRight:
+                                                          Radius.circular(20)),
+                                              child: BackdropFilter(
+                                                  filter: ImageFilter.blur(
+                                                    sigmaX: 20.0,
+                                                    sigmaY: 20.0,
+                                                  ),
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: Colors.white12,
+                                                      borderRadius:
+                                                          const BorderRadius
+                                                                  .all(
+                                                              Radius.circular(
+                                                                  20)),
+                                                      border: Border.all(
+                                                        color: Colors.black26,
+                                                        width: 0.5,
+                                                      ),
+                                                    ),
+                                                    child:
+                                                        SingleChildScrollView(
+                                                      child: Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .all(16.0),
+                                                        child: Column(
+                                                            children: [
+                                                              teamInfo.connections
+                                                                      .isEmpty
+                                                                  ? const Text(
+                                                                      "No connections, gotta find me the old fashioned way...",
+                                                                      textAlign:
+                                                                          TextAlign
+                                                                              .center,
+                                                                    )
+                                                                  : const SizedBox(),
+                                                              for (var connection
+                                                                  in teamInfo
+                                                                      .connections)
+                                                                GestureDetector(
+                                                                  onTap: () {
+                                                                    HapticFeedback
+                                                                        .heavyImpact();
+                                                                    Clipboard.setData(ClipboardData(
+                                                                            text: connection
+                                                                                .username))
+                                                                        .then(
+                                                                            (_) {
+                                                                      ScaffoldMessenger.of(
+                                                                              context)
+                                                                          .showSnackBar(
+                                                                              const SnackBar(content: Text("Copied to Clipboard")));
+                                                                    });
+                                                                  },
+                                                                  child: Row(
+                                                                    children: [
+                                                                      Container(
+                                                                        padding:
+                                                                            const EdgeInsets.all(8.0),
+                                                                        child:
+                                                                            FaIcon(
+                                                                          connection.provider == TeamConnectionProvider.DISCORD
+                                                                              ? FontAwesomeIcons.discord
+                                                                              : (connection.provider == TeamConnectionProvider.EMAIL ? FontAwesomeIcons.envelope : (connection.provider == TeamConnectionProvider.PHONE ? FontAwesomeIcons.phoneAlt : (connection.provider == TeamConnectionProvider.WHATSAPP ? FontAwesomeIcons.whatsapp : (FontAwesomeIcons.question)))),
+                                                                        ),
+                                                                      ),
+                                                                      const Spacer(),
+                                                                      Text(connection
+                                                                          .username)
+                                                                    ],
+                                                                  ),
+                                                                )
+                                                            ]),
+                                                      ),
+                                                    ),
+                                                  )));
+                                        });
+                                  }
+                                : () {
+                                    HapticFeedback.heavyImpact();
+                                    Share.share(
+                                        "I am inviting you to join Optimum, the FTC Team Scouting and Networking app that helps you find your winning alliance! Available on the Play Store and App Store.");
+                                  },
                             child: Text(
                               teamInfo.isUser ? "CONTACT" : "INVITE TO OPTIMUM",
                               style: GoogleFonts.getFont("Poppins",
@@ -655,12 +792,12 @@ class _TeamOverviewState extends State<TeamOverview> {
                         ]),
                       ),
                     )
-                  : Text(""),
+                  : const Text(""),
               teamInfo.isUser
                   ? const SizedBox(
                       height: 22,
                     )
-                  : Text(""),
+                  : const Text(""),
               teamInfo.isUser
                   ? Card(
                       color: const Color.fromRGBO(29, 29, 29, 1),
@@ -719,12 +856,12 @@ class _TeamOverviewState extends State<TeamOverview> {
                         ]),
                       ),
                     )
-                  : Text(""),
+                  : const Text(""),
               teamInfo.isUser
                   ? const SizedBox(
                       height: 22,
                     )
-                  : Text(""),
+                  : const Text(""),
               teamInfo.isUser
                   ? Card(
                       color: const Color.fromRGBO(29, 29, 29, 1),
@@ -783,12 +920,12 @@ class _TeamOverviewState extends State<TeamOverview> {
                         ]),
                       ),
                     )
-                  : Text(""),
+                  : const Text(""),
               teamInfo.isUser
                   ? const SizedBox(
                       height: 22,
                     )
-                  : Text(""),
+                  : const Text(""),
               teamInfo.isUser
                   ? Card(
                       color: const Color.fromRGBO(29, 29, 29, 1),
@@ -847,7 +984,7 @@ class _TeamOverviewState extends State<TeamOverview> {
                         ]),
                       ),
                     )
-                  : Text("")
+                  : const Text("")
             ],
           ),
         ),

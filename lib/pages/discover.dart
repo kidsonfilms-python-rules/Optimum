@@ -1,3 +1,5 @@
+// ignore_for_file: no_logic_in_create_state
+
 import 'package:fluid_bottom_nav_bar/fluid_bottom_nav_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -62,17 +64,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
   //     false,
   //   ),
   // ];
-  List<FTCTeam> teams = [
-    // FTCTeam(
-    //   "Bruhaps",
-    //   12237,
-    //   24,
-    //   "this is some boilerplate description, we basicly cant do anything and cant speel",
-    //   ["Frieght Deposit (SH)/Barcode Detection", "Warehouse Parking"],
-    //   ["Cannot do anything"],
-    //   false,
-    // ),
-  ];
+  List<FTCTeam> teams = [];
+  List<FTCTeam> ogTeams = [];
   bool gotInfo = false;
   _DiscoverPageState(this.dbService);
 
@@ -82,6 +75,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
       dbService.getCompTeams().then((teamsData) {
         setState(() {
           teams = teamsData;
+          ogTeams = teamsData;
           gotInfo = true;
         });
       });
@@ -155,8 +149,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                 Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                        builder: (context) =>
-                                            TeamOverview(teams[index], dbService.userAlliancePartners)));
+                                        builder: (context) => TeamOverview(
+                                            teams[index],
+                                            dbService.userAlliancePartners)));
                               },
                               child: Card(
                                 shape: RoundedRectangleBorder(
@@ -201,7 +196,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                           const Spacer(),
                                           teams[index].logo != ""
                                               ? Image.network(teams[index].logo,
-                                                  cacheHeight: 53)
+                                                  width: 75)
                                               : const Text("")
                                         ],
                                       ),
@@ -241,104 +236,111 @@ class _DiscoverPageState extends State<DiscoverPage> {
                                                       )))
                                             ]),
                                       ),
-                                      teams[index].isUser ? SingleChildScrollView(
-                                        scrollDirection: Axis.horizontal,
-                                        child: Row(
-                                          children: [
-                                            Row(
-                                              children: [
-                                                const Icon(Icons.check,
-                                                    color: Color.fromRGBO(
-                                                        90, 255, 63, 1)),
-                                                const SizedBox(
-                                                  width: 2.5,
-                                                ),
-                                                SizedBox(
-                                                  width: 150,
-                                                  child: Text(
-                                                      teams[index]
-                                                          .teamStrengths[0],
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: GoogleFonts.getFont(
-                                                          "Poppins",
-                                                          textStyle:
-                                                              const TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
-                                                                  fontSize:
-                                                                      11))),
-                                                ),
-                                              ],
-                                            ),
-                                            const SizedBox(
-                                              width: 10,
-                                            ),
-                                            Row(
-                                              children: [
-                                                const Icon(Icons.check,
-                                                    color: Color.fromRGBO(
-                                                        90, 255, 63, 1)),
-                                                const SizedBox(
-                                                  width: 2.5,
-                                                ),
-                                                SizedBox(
-                                                  width: 150,
-                                                  child: Text(
-                                                      teams[index]
-                                                          .teamStrengths[1],
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: GoogleFonts.getFont(
-                                                          "Poppins",
-                                                          textStyle:
-                                                              const TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
-                                                                  fontSize:
-                                                                      11))),
-                                                ),
-                                              ],
-                                            ),
-                                            Row(
-                                              children: [
-                                                const Icon(Icons.close,
-                                                    color: Color.fromRGBO(
-                                                        255, 63, 63, 1)),
-                                                const SizedBox(
-                                                  width: 2.5,
-                                                ),
-                                                SizedBox(
-                                                  width: 150,
-                                                  child: Text(
-                                                      teams[
-                                                              index]
-                                                          .teamWeaknesses[0],
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: GoogleFonts.getFont(
-                                                          "Poppins",
-                                                          textStyle:
-                                                              const TextStyle(
-                                                                  color: Colors
-                                                                      .white,
-                                                                  fontWeight:
-                                                                      FontWeight
-                                                                          .w500,
-                                                                  fontSize:
-                                                                      11))),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ) : const Text("")
+                                      teams[index].isUser
+                                          ? SingleChildScrollView(
+                                              scrollDirection: Axis.horizontal,
+                                              child: Row(
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      const Icon(Icons.check,
+                                                          color: Color.fromRGBO(
+                                                              90, 255, 63, 1)),
+                                                      const SizedBox(
+                                                        width: 2.5,
+                                                      ),
+                                                      SizedBox(
+                                                        width: 150,
+                                                        child: Text(
+                                                            teams[
+                                                                        index]
+                                                                    .teamStrengths[
+                                                                0],
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                            style: GoogleFonts.getFont(
+                                                                "Poppins",
+                                                                textStyle: const TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w500,
+                                                                    fontSize:
+                                                                        11))),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(
+                                                    width: 10,
+                                                  ),
+                                                  Row(
+                                                    children: [
+                                                      const Icon(Icons.check,
+                                                          color: Color.fromRGBO(
+                                                              90, 255, 63, 1)),
+                                                      const SizedBox(
+                                                        width: 2.5,
+                                                      ),
+                                                      SizedBox(
+                                                        width: 150,
+                                                        child: Text(
+                                                            teams[
+                                                                        index]
+                                                                    .teamStrengths[
+                                                                1],
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                            style: GoogleFonts.getFont(
+                                                                "Poppins",
+                                                                textStyle: const TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w500,
+                                                                    fontSize:
+                                                                        11))),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  Row(
+                                                    children: [
+                                                      const Icon(Icons.close,
+                                                          color: Color.fromRGBO(
+                                                              255, 63, 63, 1)),
+                                                      const SizedBox(
+                                                        width: 2.5,
+                                                      ),
+                                                      SizedBox(
+                                                        width: 150,
+                                                        child: Text(
+                                                            teams[
+                                                                        index]
+                                                                    .teamWeaknesses[
+                                                                0],
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .ellipsis,
+                                                            style: GoogleFonts.getFont(
+                                                                "Poppins",
+                                                                textStyle: const TextStyle(
+                                                                    color: Colors
+                                                                        .white,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w500,
+                                                                    fontSize:
+                                                                        11))),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            )
+                                          : const Text("")
                                     ],
                                   ),
                                 ),
@@ -381,7 +383,23 @@ class _DiscoverPageState extends State<DiscoverPage> {
                   accentColor: Colors.white,
                   automaticallyImplyBackButton: false,
                   onQueryChanged: (query) {
-                    // Call your model, bloc, controller here.
+                    setState(() {
+                      if (query.isEmpty) {
+                        teams = ogTeams;
+                      } else {
+                        var teamsBuffer = ogTeams;
+                        teams = teamsBuffer
+                            .where(
+                              (element) => (element.teamNickname.toLowerCase() +
+                                      " " +
+                                      element.teamNumber.toString() +
+                                      " " +
+                                      element.teamHeadliner.toLowerCase())
+                                  .contains(query.toLowerCase()),
+                            )
+                            .toList();
+                      }
+                    });
                   },
                   // Specify a custom transition to be used for
                   // animating between opened and closed stated.
